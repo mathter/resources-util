@@ -12,7 +12,6 @@ public interface QueueProcessor<T> extends AutoCloseable {
      * Offers an item to the queue, waiting indefinitely if necessary.
      *
      * @param item the item to add
-     * @throws InterruptedException if the thread is interrupted
      */
     public void offer(T item);
 
