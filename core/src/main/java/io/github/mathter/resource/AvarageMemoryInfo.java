@@ -1,4 +1,4 @@
-package io.github.mathter.resource.util;
+package io.github.mathter.resource;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -7,7 +7,16 @@ import java.lang.ref.Cleaner;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * An implementation of {@link MemoryInfo} that provides an average of memory usage
+ * over a period of time.
+ *
+ * <p>This implementation uses a background thread to periodically poll the
+ * {@link java.lang.management.MemoryMXBean} and maintain a series of recent
+ * memory usage measurements.</p>
+ */
 public class AvarageMemoryInfo implements MemoryInfo, AutoCloseable {
+
     private static final Cleaner CLEANER = Cleaner.create();
 
     private final long[] series;

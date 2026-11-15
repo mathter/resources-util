@@ -1,4 +1,7 @@
-package io.github.mathter.resource.util;
+package io.github.mathter.resource;
+
+import io.github.mathter.resource.util.Logger;
+import io.github.mathter.resource.util.LoggerFactory;
 
 import java.lang.ref.Cleaner;
 import java.util.concurrent.TimeUnit;
@@ -7,7 +10,17 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
+/**
+ * A simple implementation of {@link MemoryLimiter} that blocks when memory usage
+ * exceeds a certain percentage of available memory.
+ *
+ * <p>This implementation uses a background thread to monitor memory usage and
+ * signals waiting threads when memory usage drops below a certain threshold.</p>
+ */
 public class SimpleMemoryLimiter implements MemoryLimiter {
+    private static final Logger LOG = LoggerFactory.logger(SimpleMemoryLimiter.class);
+
+
     private static final Cleaner CLEANER = Cleaner.create();
 
     private final double blockPercentLevel;
@@ -24,6 +37,11 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
 
     private final Thread checkThread;
 
+    /**
+     * Creates a builder for {@link SimpleMemoryLimiter}.
+     *
+     * @return a new Builder instance
+     */
     public static Builder builder() {
         return new Builder();
     }
@@ -40,17 +58,22 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
         this.memoryInfo = memoryInfo;
         this.checkThread = new Thread(new Worker(timeUnit.toMillis(timeout)));
         this.checkThread.start();
-        this.cleanable = CLEANER.register(this, () -> this.checkThread.interrupt());
+        this.cleanable = CLEANER.register(this, () -> {
+            LOG.info("Free resources of rate limiter.");
+            this.checkThread.interrupt();
+        });
     }
 
     @Override
     public void check() {
         while (!Thread.currentThread().isInterrupted()) {
+            LOG.info("Check for available mem...");
             final long available = this.memoryInfo.available();
             final long used = this.memoryInfo.used();
 
             if ((double) used / available >= this.blockPercentLevel) {
                 try {
+                    LOG.info("Waiting for available mem...");
                     this.lock.lock();
                     this.condition.await();
                 } catch (InterruptedException e) {
@@ -58,6 +81,7 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
                     this.lock.unlock();
                 }
             } else {
+                LOG.info("Waiting of mem complete.");
                 break;
             }
         }
@@ -65,6 +89,7 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
 
     @Override
     public boolean check(long timeout, TimeUnit timeUnit) throws InterruptedException {
+        LOG.info(() -> "Check for available mem... timeout=" + timeout + " timeUnit=" + timeUnit);
         final long start = System.nanoTime();
         boolean result = false;
 
@@ -79,12 +104,14 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
                                 TimeUnit.NANOSECONDS
                         );
 
+                        LOG.info(() -> "Waiting for available mem alone timeout=" + timeout2);
                         if (timeout2 <= 0 || !this.condition.await(timeout2, timeUnit)) {
                             break;
                         }
                     } catch (InterruptedException e) {
                     }
                 } else {
+                    LOG.info(() -> "Unlock this thread.");
                     result = true;
                     break;
                 }
@@ -93,18 +120,26 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
             this.lock.unlock();
         }
 
+        final boolean r = result;
+        LOG.info(() -> "Waiting of mem complete with result=" + r);
         return result;
     }
 
     @Override
     public void close() throws Exception {
+        LOG.info(() -> "Close memory limiter.");
         if (this.memoryInfo instanceof AutoCloseable closeable) {
             closeable.close();
         }
         this.cleanable.clean();
     }
 
+    /**
+     * A worker thread that monitors memory usage and signals waiting threads
+     * when the usage falls below the unblock threshold.
+     */
     private class Worker implements Runnable {
+
         private final long timeout;
 
         public Worker(long timeout) {
@@ -114,6 +149,7 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
         @Override
         public void run() {
             while (!Thread.currentThread().isInterrupted()) {
+                LOG.info(() -> "Check for available mem.");
                 try {
                     final double available = SimpleMemoryLimiter.this.memoryInfo.available();
                     final double used = SimpleMemoryLimiter.this.memoryInfo.used();
@@ -122,6 +158,7 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
                         SimpleMemoryLimiter.this.lock.lock();
 
                         try {
+                            LOG.info("Unlock waiting threads.");
                             SimpleMemoryLimiter.this.condition.signalAll();
                         } finally {
                             SimpleMemoryLimiter.this.lock.unlock();
@@ -131,15 +168,20 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
                     try {
                         Thread.sleep(this.timeout);
                     } catch (InterruptedException e) {
+                        LOG.info("Checking for available mem interrupted.");
                     }
                 } catch (Throwable t) {
-                    t.printStackTrace();
+                    LOG.error(() -> "An error occurred during the check for available mem!", t);
                 }
             }
         }
     }
 
+    /**
+     * Builder for {@link SimpleMemoryLimiter}.
+     */
     public static class Builder {
+
         public static final double DEFAULT_BLOCK_PERCENT_LEVEL = 20;
 
         public static final double DEFAULT_UNBLOCK_PERCENT_LEVEL = 30;

@@ -1,4 +1,4 @@
-package io.github.mathter.resource.util;
+package io.github.mathter.resource;
 
 import java.lang.ref.Cleaner;
 import java.util.ArrayList;
@@ -205,10 +205,12 @@ public class SimpleQueueProcessor<T> implements QueueProcessor<T>, AutoCloseable
         this.cleanable.clean();
     }
 
-    /**
-     * Builder for {@link SimpleQueueProcessor}.
-     */
-    public static final class Builder<T> {
+/**
+ * Builder for {@link SimpleQueueProcessor}.
+ */
+public static final class Builder<T> {
+
+
         public static final int DEFAULT_CAPACITY = 1000;
 
         public static final int DEFAULT_PROCESSOR_COUNT = 1;
