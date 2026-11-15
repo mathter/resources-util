@@ -1,4 +1,4 @@
-package io.github.mathter.resource;
+package io.github.mathter.resources;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

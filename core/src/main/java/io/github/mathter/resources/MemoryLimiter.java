@@ -1,4 +1,4 @@
-package io.github.mathter.resource;
+package io.github.mathter.resources;
 
 import java.util.concurrent.TimeUnit;
 

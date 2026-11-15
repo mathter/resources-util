@@ -1,7 +1,7 @@
-package io.github.mathter.resource.util.slf4j;
+package io.github.mathter.resources.util.slf4j;
 
-import io.github.mathter.resource.util.Logger;
-import io.github.mathter.resource.util.LoggerFactory;
+import io.github.mathter.resources.util.Logger;
+import io.github.mathter.resources.util.LoggerFactory;
 
 import java.util.function.Supplier;
 

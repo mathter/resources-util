@@ -1,4 +1,4 @@
-package io.github.mathter.resource;
+package io.github.mathter.resources;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;

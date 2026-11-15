@@ -1,4 +1,4 @@
-package io.github.mathter.resource.util;
+package io.github.mathter.resources.util;
 
 import java.util.ArrayList;
 import java.util.List;

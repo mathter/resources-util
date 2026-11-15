@@ -1,7 +1,7 @@
-package io.github.mathter.resource;
+package io.github.mathter.resources;
 
-import io.github.mathter.resource.util.Logger;
-import io.github.mathter.resource.util.LoggerFactory;
+import io.github.mathter.resources.util.Logger;
+import io.github.mathter.resources.util.LoggerFactory;
 
 import java.lang.ref.Cleaner;
 import java.util.ArrayList;
