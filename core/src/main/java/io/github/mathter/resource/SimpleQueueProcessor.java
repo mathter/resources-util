@@ -1,5 +1,8 @@
 package io.github.mathter.resource;
 
+import io.github.mathter.resource.util.Logger;
+import io.github.mathter.resource.util.LoggerFactory;
+
 import java.lang.ref.Cleaner;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,6 +40,8 @@ import java.util.function.Function;
  * @param <T> the type of elements to be processed
  */
 public class SimpleQueueProcessor<T> implements QueueProcessor<T>, AutoCloseable {
+    private static final Logger LOG = LoggerFactory.logger(SimpleMemoryLimiter.class);
+
     private static final Cleaner CLEANER = Cleaner.create();
 
     private final Consumer<Collection<T>> consumer;
@@ -162,7 +167,8 @@ public class SimpleQueueProcessor<T> implements QueueProcessor<T>, AutoCloseable
             boolean forceProcess = false;
 
             while (!Thread.currentThread().isInterrupted()) {
-                Collection<T> toBeProcessed = null;
+                LOG.debug(() -> "Check queue cycle started...");
+                Collection<T> toBeProcessed;
                 SimpleQueueProcessor.this.lock.lock();
 
                 try {
@@ -187,11 +193,15 @@ public class SimpleQueueProcessor<T> implements QueueProcessor<T>, AutoCloseable
                     SimpleQueueProcessor.this.lock.unlock();
                 }
 
-                if (toBeProcessed != null && !toBeProcessed.isEmpty()) {
+                if (!toBeProcessed.isEmpty()) {
+                    LOG.info(() -> "Process incoming the queue...");
                     try {
                         SimpleQueueProcessor.this.consumer.accept(toBeProcessed);
                     } catch (Throwable e) {
+                        LOG.error(() -> "An error occurred during queue processing!", e);
                         SimpleQueueProcessor.this.throwableConsumer.accept(e);
+                    } finally {
+                        LOG.info("Processing of the queue complete.");
                     }
                 }
 
@@ -205,10 +215,10 @@ public class SimpleQueueProcessor<T> implements QueueProcessor<T>, AutoCloseable
         this.cleanable.clean();
     }
 
-/**
- * Builder for {@link SimpleQueueProcessor}.
- */
-public static final class Builder<T> {
+    /**
+     * Builder for {@link SimpleQueueProcessor}.
+     */
+    public static final class Builder<T> {
 
 
         public static final int DEFAULT_CAPACITY = 1000;
@@ -222,10 +232,12 @@ public static final class Builder<T> {
         public static final CollectionFactory<?> DEFAULT_COLLECTION_FACTORY = ArrayList::new;
 
         public static final ThreadFactory DEFAULT_THREAD_FACTORY = new ThreadFactory() {
+            private int index = 0;
+
             @Override
             public Thread newThread(Runnable r) {
                 final Thread thread = new Thread(r);
-                thread.setName("simple-queue-processor-thread");
+                thread.setName("simple-queue-processor-thread-" + this.index++);
                 return thread;
             }
         };

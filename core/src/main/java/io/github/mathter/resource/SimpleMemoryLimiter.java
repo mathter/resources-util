@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 public class SimpleMemoryLimiter implements MemoryLimiter {
     private static final Logger LOG = LoggerFactory.logger(SimpleMemoryLimiter.class);
 
+    private static int THREAD_INDEX = 0;
 
     private static final Cleaner CLEANER = Cleaner.create();
 
@@ -57,9 +58,11 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
         this.unblockPercentLevel = unblockPercentLevel;
         this.memoryInfo = memoryInfo;
         this.checkThread = new Thread(new Worker(timeUnit.toMillis(timeout)));
+        this.checkThread.setName("simple-memory-limiter-thread-" + THREAD_INDEX++);
         this.checkThread.start();
         this.cleanable = CLEANER.register(this, () -> {
-            LOG.info("Free resources of rate limiter.");
+            LOG.info(() -> "Free resources of rate limiter.");
+
             this.checkThread.interrupt();
         });
     }
@@ -67,13 +70,15 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
     @Override
     public void check() {
         while (!Thread.currentThread().isInterrupted()) {
-            LOG.info("Check for available mem...");
+            LOG.info(() -> "Check for available mem...");
+
             final long available = this.memoryInfo.available();
             final long used = this.memoryInfo.used();
 
             if ((double) used / available >= this.blockPercentLevel) {
                 try {
-                    LOG.info("Waiting for available mem...");
+                    LOG.info(() -> "Waiting for available mem...");
+
                     this.lock.lock();
                     this.condition.await();
                 } catch (InterruptedException e) {
@@ -81,7 +86,8 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
                     this.lock.unlock();
                 }
             } else {
-                LOG.info("Waiting of mem complete.");
+                LOG.info(() -> "Waiting of mem complete.");
+
                 break;
             }
         }
@@ -158,7 +164,7 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
                         SimpleMemoryLimiter.this.lock.lock();
 
                         try {
-                            LOG.info("Unlock waiting threads.");
+                            LOG.info(() -> "Unlock waiting threads.");
                             SimpleMemoryLimiter.this.condition.signalAll();
                         } finally {
                             SimpleMemoryLimiter.this.lock.unlock();
@@ -168,7 +174,8 @@ public class SimpleMemoryLimiter implements MemoryLimiter {
                     try {
                         Thread.sleep(this.timeout);
                     } catch (InterruptedException e) {
-                        LOG.info("Checking for available mem interrupted.");
+                        LOG.info(() -> "Checking for available mem interrupted.");
+
                     }
                 } catch (Throwable t) {
                     LOG.error(() -> "An error occurred during the check for available mem!", t);

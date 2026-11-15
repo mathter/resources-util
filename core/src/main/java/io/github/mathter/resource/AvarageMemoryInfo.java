@@ -19,6 +19,8 @@ public class AvarageMemoryInfo implements MemoryInfo, AutoCloseable {
 
     private static final Cleaner CLEANER = Cleaner.create();
 
+    private static int THREAD_INDEX = 0;
+
     private final long[] series;
 
     private final Thread thread;
@@ -45,6 +47,7 @@ public class AvarageMemoryInfo implements MemoryInfo, AutoCloseable {
                 }
             }
         });
+        this.thread.setName("avarage-memory-info-thread-" + THREAD_INDEX++);
         this.thread.start();
         this.cleanable = CLEANER.register(this, this.thread::interrupt);
 
