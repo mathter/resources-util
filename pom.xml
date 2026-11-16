@@ -4,7 +4,7 @@
 
     <groupId>io.github.mathter.resources.util</groupId>
     <artifactId>parent</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.1</version>
     <name>resources-util</name>
     <url>https://github.com/mathter/resources-util</url>
     <description>This project provides utilities for resource limiting, such as memory and queue processing.
@@ -27,7 +27,7 @@
         <connection>scm:git:https://github.com/mathter/resources-util.git</connection>
         <developerConnection>scm:git:https://github.com/mathter/resources-util.git</developerConnection>
         <url>https://github.com/mathter/resources-util</url>
-      <tag>HEAD</tag>
+      <tag>release-1.0.1</tag>
   </scm>
 
     <packaging>pom</packaging>
@@ -49,12 +49,12 @@
             <dependency>
                 <groupId>io.github.mathter.resources.util</groupId>
                 <artifactId>core</artifactId>
-                <version>1.0.1-SNAPSHOT</version>
+                <version>1.0.1</version>
             </dependency>
             <dependency>
                 <groupId>io.github.mathter.resources.util</groupId>
                 <artifactId>log-slf4j2</artifactId>
-                <version>1.0.1-SNAPSHOT</version>
+                <version>1.0.1</version>
             </dependency>
             <dependency>
                 <groupId>io.micrometer</groupId>
